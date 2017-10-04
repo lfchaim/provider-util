@@ -9,27 +9,35 @@ import java.util.Map;
 
 public class TestCSVtoSQLInsert {
 
+	private static String delim = "\\|";
+	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		String path = "C:\\Users\\luis.chaim\\Downloads";
+		String path = "C:\\Users\\luis.chaim\\Downloads\\csv_sync\\";
+		
+		String fileToFilter = null;//"Indexadores_OLD";
+		
 		Map<String,String> map = new LinkedHashMap<>();
-		map.put("CbdPlanoContas", "CbdPlanoContas03102017 141717.csv");
-		map.put("CbdCentrosCusto", "CbdCentrosCusto03102017 141713.csv");
-		map.put("CbdHistoricosPadroes", "CbdHistoricosPadroes03102017 141715.csv");
-		map.put("CbdTiposEventos", "CbdTiposEventos03102017 141719.csv");
-		map.put("CbdTiposEventosCtas", "CbdTiposEventos03102017 141723.csv");
-
+		List<String> listFile = FileUtil.listFile(path);
+		for( int i = 0; i < listFile.size(); i++ ){
+			if( listFile.get(i).indexOf("_OLD") > -1 ){
+				if( fileToFilter != null && listFile.get(i).indexOf(fileToFilter) < 0 )
+					continue;
+				map.put(listFile.get(i).substring(0,listFile.get(i).indexOf("_OLD")), listFile.get(i));
+			}
+		}
+		
 		Iterator<String> it = map.keySet().iterator();
 		while( it.hasNext() ){
 			String key = it.next();
 			System.out.println("Tratando "+key);
 			List<String> listSql = listSQL(path, map.get(key), key);
-			FileUtil.writeFile(path, key+".csv", listSql, false);
+			FileUtil.writeFile(path, key+".sql", listSql, false);
 		}
 	}
 
 	public static List<String> listSQL(String path, String csv, String table){
-		List<String[]> listCsv1 = FileUtil.listContentDelim(path, csv, ",");
+		List<String[]> listCsv1 = FileUtil.listContentDelim(path, csv, delim);
 		List<String> listSql = new ArrayList<>();
 		if( listCsv1.size() <=1 )
 			return listSql;
@@ -49,8 +57,11 @@ public class TestCSVtoSQLInsert {
 				for( int j = 1; j < listCsv1.get(i).length; j++ ){
 					if( j > 1 )
 						sb.append(",");
-					if( listCsv1.get(0)[j].startsWith("Id") || listCsv1.get(0)[j].startsWith("Cod") ){
-						sb.append(listCsv1.get(i)[j]);
+					if( listCsv1.get(0)[j].startsWith("Id") || listCsv1.get(0)[j].startsWith("Cod") || listCsv1.get(0)[j].startsWith("Seq") || listCsv1.get(0)[j].startsWith("Num") ){
+						if( isNum(listCsv1.get(i)[j]) )
+							sb.append(listCsv1.get(i)[j]);
+						else
+							sb.append("'").append(listCsv1.get(i)[j]).append("'");
 					} else if( listCsv1.get(0)[j].startsWith("Dt") || listCsv1.get(0)[j].startsWith("Dat") ){
 						Date dt = DateUtil.parse(listCsv1.get(i)[j], sdfa);
 						String dtStr = DateUtil.format(dt, sdfb);
@@ -66,5 +77,16 @@ public class TestCSVtoSQLInsert {
 			}
 		}
 		return listSql;
+	}
+	
+	private static boolean isNum( String val ){
+		boolean ret = true;
+		if( val == null )
+			return ret;
+		for( int i = 0; i < val.length(); i++ ){
+			if( !Character.isDigit(val.charAt(i)) )
+				return false;
+		}
+		return ret;
 	}
 }

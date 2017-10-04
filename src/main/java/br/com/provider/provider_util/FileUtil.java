@@ -51,4 +51,16 @@ public class FileUtil {
 		}
 		return count;
 	}
+	
+	public static List<String> listFile( String path ){
+		File dir = new File(path);
+		List<String> ret = new ArrayList<>();
+		if( dir.isDirectory() ){
+			File[] files = dir.listFiles();
+			for( int i = 0; i < files.length; i++ ){
+				ret.add(files[i].getName());
+			}
+		}
+		return ret;
+	}
 }
